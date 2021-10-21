@@ -1,4 +1,5 @@
 using System;
+using MassTransit;
 
 namespace DN.WebApi.Domain.Contracts
 {
@@ -8,7 +9,7 @@ namespace DN.WebApi.Domain.Contracts
 
         protected BaseEntity()
         {
-            Id = Guid.NewGuid();
+            Id = NewId.Next().ToGuid();
         }
     }
 }
