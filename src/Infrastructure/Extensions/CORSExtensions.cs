@@ -14,6 +14,7 @@ namespace DN.WebApi.Infrastructure.Extensions
                 opt.AddPolicy("CorsPolicy", policy =>
                 {
                     policy.AllowAnyHeader().AllowAnyMethod().WithOrigins(corsSettings.Angular);
+                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins(corsSettings.BlazorClientBoilerPlate);
                 });
             });
         }
