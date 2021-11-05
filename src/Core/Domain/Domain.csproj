@@ -21,4 +21,9 @@
     </PackageReference>
     <AdditionalFiles Include="..\..\..\stylecop.json" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Entities\Fraud\" />
+    <Folder Include="Entities\Incentives\" />
+    <Folder Include="Entities\Titles\" />
+  </ItemGroup>
 </Project>
