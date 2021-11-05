@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DN.WebApi.Infrastructure.Extensions
 {
-    public static class CORSExtensions
+    public static class CorsExtensions
     {
         internal static IServiceCollection AddCorsPolicy(this IServiceCollection services)
         {
@@ -13,8 +13,7 @@ namespace DN.WebApi.Infrastructure.Extensions
             {
                 opt.AddPolicy("CorsPolicy", policy =>
                 {
-                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins(corsSettings.Angular);
-                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins(corsSettings.BlazorClientBoilerPlate);
+                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins(new string[] { corsSettings.Angular, corsSettings.Blazor });
                 });
             });
         }

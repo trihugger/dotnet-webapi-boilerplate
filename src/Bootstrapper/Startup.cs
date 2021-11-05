@@ -1,7 +1,5 @@
 using DN.WebApi.Application.Extensions;
 using DN.WebApi.Infrastructure.Extensions;
-using DN.WebApi.Infrastructure.Mappings;
-using DN.WebApi.Shared.DTOs;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
