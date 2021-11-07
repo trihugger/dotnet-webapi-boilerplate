@@ -10,10 +10,12 @@ namespace DN.WebApi.Bootstrapper.Controllers.Identity
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IActiveDirectoryService _activeDirectoryService;
 
-        public UsersController(IUserService userService)
+        public UsersController(IUserService userService, IActiveDirectoryService activeDirectoryService)
         {
             _userService = userService;
+            _activeDirectoryService = activeDirectoryService;
         }
 
         [HttpGet]
@@ -49,6 +51,15 @@ namespace DN.WebApi.Bootstrapper.Controllers.Identity
         {
             var result = await _userService.AssignRolesAsync(id, request);
             return Ok(result);
+        }
+
+        [HttpGet("import/")]
+        public async Task<IActionResult> ImportAdUsersAsync()
+        {
+            var result = await _activeDirectoryService.ImportAdUsersAsync();
+            if (result.Succeeded) return Ok();
+
+            return UnprocessableEntity(result);
         }
     }
 }

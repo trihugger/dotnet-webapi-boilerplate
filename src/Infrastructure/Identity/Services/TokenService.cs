@@ -34,6 +34,7 @@ namespace DN.WebApi.Infrastructure.Identity.Services
         private readonly MailSettings _mailSettings;
         private readonly JwtSettings _config;
         private readonly ITenantService _tenantService;
+        private readonly IActiveDirectoryService _activeDirectoryService;
 
         public TokenService(
             UserManager<ApplicationUser> userManager,
@@ -42,7 +43,8 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             IStringLocalizer<TokenService> localizer,
             IOptions<MailSettings> mailSettings,
             ITenantService tenantService,
-            TenantManagementDbContext tenantContext)
+            TenantManagementDbContext tenantContext,
+            IActiveDirectoryService activeDirectoryService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -51,6 +53,7 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             _config = config.Value;
             _tenantService = tenantService;
             _tenantContext = tenantContext;
+            _activeDirectoryService = activeDirectoryService;
         }
 
         public async Task<IResult<TokenResponse>> GetTokenAsync(TokenRequest request, string ipAddress)
@@ -84,6 +87,12 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             if (_mailSettings.EnableVerification && !user.EmailConfirmed)
             {
                 throw new IdentityException(_localizer["identity.emailnotconfirmed"], statusCode: HttpStatusCode.Unauthorized);
+            }
+
+            if (_tenantService.UseAD())
+            {
+                bool adUserValid = _activeDirectoryService.AuthenticateAsync(_tenantService.GetAdDomain(), user.UserName, request.Password);
+                if (adUserValid) await _activeDirectoryService.UpdateUserAsync(user.UserName, request.Password);
             }
 
             bool passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);

@@ -138,5 +138,15 @@ namespace DN.WebApi.Infrastructure.Services.General
         {
             return _currentTenant;
         }
+
+        public bool UseAD()
+        {
+            return _options.UseAD;
+        }
+
+        public string GetAdDomain()
+        {
+            return _options.AdDomain;
+        }
     }
 }

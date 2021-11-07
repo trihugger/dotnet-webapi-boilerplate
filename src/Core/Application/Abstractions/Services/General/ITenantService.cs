@@ -7,5 +7,7 @@ namespace DN.WebApi.Application.Abstractions.Services.General
         public string GetDatabaseProvider();
         public string GetConnectionString();
         public TenantDto GetCurrentTenant();
+        public bool UseAD();
+        public string GetAdDomain();
     }
 }

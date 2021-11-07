@@ -12,6 +12,9 @@ namespace DN.WebApi.Domain.Enums
         Person,
         Business,
         Fiduciary,
-        Vendor
+        Branch,
+        Vendor,
+        Dealer,
+        FI
     }
 }

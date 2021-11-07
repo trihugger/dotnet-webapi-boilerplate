@@ -1,6 +1,7 @@
 ﻿using DN.WebApi.Domain.Contracts;
 using DN.WebApi.Domain.Enums;
 using DN.WebApi.Domain.Extensions;
+using System;
 
 namespace DN.WebApi.Domain.Entities.Core
 {
@@ -9,6 +10,10 @@ namespace DN.WebApi.Domain.Entities.Core
         public string TaxId { get; set; }
         public string Name { get; set; }
         public EntityType EntityType { get; set; }
+
+        public Guid AddressId { get; set; }
+        public Address Address { get; set; }
+
         public string TenantKey { get; set; }
     }
 }

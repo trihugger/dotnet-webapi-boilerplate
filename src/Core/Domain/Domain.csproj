@@ -10,6 +10,11 @@
     <CodeAnalysisRuleSet>..\..\..\dotnet.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Entities\Old\**" />
+    <EmbeddedResource Remove="Entities\Old\**" />
+    <None Remove="Entities\Old\**" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="NewId" Version="4.0.0-develop.44" />
     <PackageReference Include="Roslynator.Analyzers" Version="3.2.2">
       <PrivateAssets>all</PrivateAssets>
