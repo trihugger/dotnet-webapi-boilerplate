@@ -1,10 +1,10 @@
+using System.Threading.Tasks;
 using DN.WebApi.Application.Abstractions.Services.Identity;
 using DN.WebApi.Domain.Constants;
 using DN.WebApi.Infrastructure.Identity.Permissions;
 using DN.WebApi.Shared.DTOs.Identity.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 
 namespace DN.WebApi.Bootstrapper.Controllers.Identity
 {
@@ -27,8 +27,7 @@ namespace DN.WebApi.Bootstrapper.Controllers.Identity
         [MustHavePermission(PermissionConstants.Identity.Register)]
         public async Task<IActionResult> RegisterAsync(RegisterRequest request)
         {
-            string baseUrl = $"{this.Request.Scheme}://{this.Request.Host.Value.ToString()}{this.Request.PathBase.Value.ToString()}";
-            string origin = string.IsNullOrEmpty(Request.Headers["origin"].ToString()) ? baseUrl : Request.Headers["origin"].ToString();
+            string origin = GenerateOrigin();
             return Ok(await _identityService.RegisterAsync(request, origin));
         }
 
@@ -50,7 +49,7 @@ namespace DN.WebApi.Bootstrapper.Controllers.Identity
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
-            var origin = Request.Headers["origin"];
+            string origin = GenerateOrigin();
             return Ok(await _identityService.ForgotPasswordAsync(request, origin));
         }
 
@@ -71,6 +70,13 @@ namespace DN.WebApi.Bootstrapper.Controllers.Identity
         public async Task<IActionResult> GetProfileDetailsAsync()
         {
             return Ok(await _userService.GetAsync(_user.GetUserId().ToString()));
+        }
+
+        private string GenerateOrigin()
+        {
+            string baseUrl = $"{this.Request.Scheme}://{this.Request.Host.Value}{this.Request.PathBase.Value}";
+            string origin = string.IsNullOrEmpty(Request.Headers["origin"].ToString()) ? baseUrl : Request.Headers["origin"].ToString();
+            return origin;
         }
     }
 }

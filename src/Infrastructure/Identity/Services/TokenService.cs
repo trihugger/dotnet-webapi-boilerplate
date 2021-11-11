@@ -29,7 +29,6 @@ namespace DN.WebApi.Infrastructure.Identity.Services
     {
         private readonly TenantManagementDbContext _tenantContext;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly IStringLocalizer<TokenService> _localizer;
         private readonly MailSettings _mailSettings;
         private readonly JwtSettings _config;
@@ -37,7 +36,6 @@ namespace DN.WebApi.Infrastructure.Identity.Services
 
         public TokenService(
             UserManager<ApplicationUser> userManager,
-            RoleManager<ApplicationRole> roleManager,
             IOptions<JwtSettings> config,
             IStringLocalizer<TokenService> localizer,
             IOptions<MailSettings> mailSettings,
@@ -45,7 +43,6 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             TenantManagementDbContext tenantContext)
         {
             _userManager = userManager;
-            _roleManager = roleManager;
             _localizer = localizer;
             _mailSettings = mailSettings.Value;
             _config = config.Value;
@@ -95,7 +92,7 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             user.RefreshToken = GenerateRefreshToken();
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(_config.RefreshTokenExpirationInDays);
             await _userManager.UpdateAsync(user);
-            string token = GenerateJwtAsync(user, ipAddress);
+            string token = GenerateJwt(user, ipAddress);
             var response = new TokenResponse(token, user.RefreshToken, user.RefreshTokenExpiryTime);
             return await Result<TokenResponse>.SuccessAsync(response);
         }
@@ -120,7 +117,7 @@ namespace DN.WebApi.Infrastructure.Identity.Services
                 throw new IdentityException(_localizer["identity.invalidtoken"], statusCode: HttpStatusCode.Unauthorized);
             }
 
-            string token = GenerateEncryptedToken(GetSigningCredentials(), GetClaimsAsync(user, ipAddress));
+            string token = GenerateEncryptedToken(GetSigningCredentials(), GetClaims(user, ipAddress));
             user.RefreshToken = GenerateRefreshToken();
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(_config.RefreshTokenExpirationInDays);
             await _userManager.UpdateAsync(user);
@@ -128,12 +125,12 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             return await Result<TokenResponse>.SuccessAsync(response);
         }
 
-        private string GenerateJwtAsync(ApplicationUser user, string ipAddress)
+        private string GenerateJwt(ApplicationUser user, string ipAddress)
         {
-            return GenerateEncryptedToken(GetSigningCredentials(), GetClaimsAsync(user, ipAddress));
+            return GenerateEncryptedToken(GetSigningCredentials(), GetClaims(user, ipAddress));
         }
 
-        private IEnumerable<Claim> GetClaimsAsync(ApplicationUser user, string ipAddress)
+        private IEnumerable<Claim> GetClaims(ApplicationUser user, string ipAddress)
         {
             string tenantKey = _tenantService.GetCurrentTenant()?.Key;
             return new List<Claim>
@@ -175,7 +172,8 @@ namespace DN.WebApi.Infrastructure.Identity.Services
                 ValidateIssuer = false,
                 ValidateAudience = false,
                 RoleClaimType = ClaimTypes.Role,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.Zero,
+                ValidateLifetime = false
             };
             var tokenHandler = new JwtSecurityTokenHandler();
             var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
