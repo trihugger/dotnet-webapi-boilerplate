@@ -5,7 +5,6 @@ using DN.WebApi.Shared.DTOs.Catalog;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using System;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DN.WebApi.Bootstrapper.Controllers.v1
@@ -17,17 +16,6 @@ namespace DN.WebApi.Bootstrapper.Controllers.v1
         public BrandsController(IBrandService service)
         {
             _service = service;
-        }
-
-        [HttpGet]
-        [MustHavePermission(PermissionConstants.Brands.View)]
-        [SwaggerOperation(Summary = "Get Brands using available Filters and taking advantage of the caching server side.")]
-        public async Task<IActionResult> GetAsync(string filter)
-        {
-            BrandListFilter listFilter = JsonSerializer.Deserialize<BrandListFilter>(filter);
-
-            var brands = await _service.SearchAsync(listFilter);
-            return Ok(brands);
         }
 
         [HttpPost("search")]
