@@ -14,7 +14,6 @@ using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -42,7 +41,8 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
             _localizer = localizer;
         }
 
-        #region  Entity Framework Core : Get All
+        #region Entity Framework Core : Get All
+
         public async Task<List<T>> GetListAsync<T>(Expression<Func<T, bool>> expression, bool noTracking = false, CancellationToken cancellationToken = default)
         where T : BaseEntity
         {
@@ -51,7 +51,9 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
             if (expression != null) query = query.Where(expression);
             return await query.ToListAsync(cancellationToken);
         }
-        #endregion
+
+        #endregion Entity Framework Core : Get All
+
         public async Task<T> GetByIdAsync<T>(Guid entityId, BaseSpecification<T> specification = null, CancellationToken cancellationToken = default)
         where T : BaseEntity
         {
@@ -70,15 +72,14 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
             if (cachedData != null)
             {
                 await _cache.RefreshAsync(cacheKey, cancellationToken);
-                var entity = _serializer.Deserialize<TDto>(Encoding.Default.GetString(cachedData));
-                return entity;
+                return _serializer.Deserialize<TDto>(Encoding.Default.GetString(cachedData));
             }
             else
             {
                 IQueryable<T> query = _dbContext.Set<T>();
                 if (specification != null)
-                    query = query.Specify(specification).Where(a => a.Id == entityId);
-                var entity = await query.FirstOrDefaultAsync(cancellationToken: cancellationToken);
+                    query = query.Specify(specification);
+                var entity = await query.Where(a => a.Id == entityId).FirstOrDefaultAsync(cancellationToken: cancellationToken);
                 var dto = entity.Adapt<TDto>();
                 if (dto != null)
                 {
@@ -158,6 +159,7 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
         }
 
         #region Dapper
+
         public async Task<IReadOnlyList<T>> QueryAsync<T>(string sql, object param = null, IDbTransaction transaction = null, CancellationToken cancellationToken = default)
         where T : BaseEntity
         {
@@ -204,6 +206,7 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
 
             return await query.CountAsync(cancellationToken);
         }
-        #endregion
+
+        #endregion Dapper
     }
 }

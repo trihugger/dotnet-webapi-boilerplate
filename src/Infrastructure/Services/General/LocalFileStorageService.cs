@@ -1,12 +1,12 @@
+using DN.WebApi.Application.Abstractions.Services.General;
+using DN.WebApi.Domain.Enums;
+using DN.WebApi.Infrastructure.Extensions;
+using DN.WebApi.Shared.DTOs.General.Requests;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using DN.WebApi.Application.Abstractions.Services.General;
-using DN.WebApi.Domain.Enums;
-using DN.WebApi.Infrastructure.Extensions;
-using DN.WebApi.Shared.DTOs.General.Requests;
 
 namespace DN.WebApi.Infrastructure.Services.General
 {
@@ -48,7 +48,7 @@ namespace DN.WebApi.Infrastructure.Services.General
 
                 string fileName = request.Name.Trim('"');
                 fileName = RemoveSpecialCharacters(fileName);
-                fileName = RegexExtensions.ReplaceWhitespace(fileName, "-");
+                fileName = fileName.ReplaceWhitespace("-");
                 fileName += request.Extension.Trim();
                 string fullPath = Path.Combine(pathToSave, fileName);
                 string dbPath = Path.Combine(folderName, fileName);

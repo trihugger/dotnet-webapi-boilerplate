@@ -23,6 +23,7 @@ namespace DN.WebApi.Infrastructure.Persistence
         private readonly ICurrentUser _currentUserService;
         public DbSet<Trail> AuditTrails { get; set; }
         public string TenantKey { get; set; }
+
         protected BaseDbContext(DbContextOptions options, ITenantService tenantService, ICurrentUser currentUserService, ISerializerService serializer)
         : base(options)
         {
@@ -55,9 +56,11 @@ namespace DN.WebApi.Infrastructure.Persistence
                     case "postgresql":
                         optionsBuilder.UseNpgsql(_tenantService.GetConnectionString());
                         break;
+
                     case "mssql":
                         optionsBuilder.UseSqlServer(_tenantService.GetConnectionString());
                         break;
+
                     case "mysql":
                         optionsBuilder.UseMySql(_tenantService.GetConnectionString(), ServerVersion.AutoDetect(_tenantService.GetConnectionString()));
                         break;
@@ -85,7 +88,7 @@ namespace DN.WebApi.Infrastructure.Persistence
             return result;
         }
 
-        private List<AuditTrail> OnBeforeSaveChanges(Guid userId)
+        private List<AuditTrail> OnBeforeSaveChanges(in Guid userId)
         {
             ChangeTracker.DetectChanges();
             var trailEntries = new List<AuditTrail>();
@@ -153,7 +156,7 @@ namespace DN.WebApi.Infrastructure.Persistence
             return trailEntries.Where(_ => _.HasTemporaryProperties).ToList();
         }
 
-        private Task OnAfterSaveChangesAsync(List<AuditTrail> trailEntries, CancellationToken cancellationToken = new())
+        private Task OnAfterSaveChangesAsync(List<AuditTrail> trailEntries, in CancellationToken cancellationToken = new())
         {
             if (trailEntries == null || trailEntries.Count == 0)
                 return Task.CompletedTask;

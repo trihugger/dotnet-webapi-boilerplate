@@ -17,6 +17,7 @@ namespace DN.WebApi.Infrastructure.Persistence
         public IDbConnection Connection => Database.GetDbConnection();
         private readonly ICurrentUser _currentUserService;
         private readonly ITenantService _tenantService;
+
         public ApplicationDbContext(DbContextOptions options, ITenantService tenantService, ICurrentUser currentUserService, ISerializerService serializer)
         : base(options, tenantService, currentUserService, serializer)
         {
@@ -27,10 +28,6 @@ namespace DN.WebApi.Infrastructure.Persistence
 
         public DbSet<Product> Products { get; set; }
         public DbSet<Brand> Brands { get; set; }
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-        }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {
@@ -48,6 +45,7 @@ namespace DN.WebApi.Infrastructure.Persistence
                         entry.Entity.LastModifiedOn = DateTime.UtcNow;
                         entry.Entity.LastModifiedBy = currentUserId;
                         break;
+
                     case EntityState.Deleted:
                         if (entry.Entity is ISoftDelete softDelete)
                         {

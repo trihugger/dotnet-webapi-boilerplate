@@ -6,6 +6,7 @@ using DN.WebApi.Infrastructure.Persistence.Multitenancy;
 using Hangfire;
 using Hangfire.MySql;
 using Hangfire.PostgreSql;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -35,26 +36,51 @@ namespace DN.WebApi.Infrastructure.Persistence.Extensions
             {
                 case "postgresql":
                     services.AddDbContext<T>(m => m.UseNpgsql(rootConnectionString, e => e.MigrationsAssembly("Migrators.PostgreSQL")));
-                    services.AddHangfire(x => x.UsePostgreSqlStorage(rootConnectionString));
                     break;
+
                 case "mssql":
                     services.AddDbContext<T>(m => m.UseSqlServer(rootConnectionString, e => e.MigrationsAssembly("Migrators.MSSQL")));
-                    services.AddHangfire(x => x.UseSqlServerStorage(rootConnectionString));
                     break;
+
                 case "mysql":
                     services.AddDbContext<T>(m => m.UseMySql(rootConnectionString, ServerVersion.AutoDetect(rootConnectionString), e =>
                     {
                         e.MigrationsAssembly("Migrators.MySQL");
                         e.SchemaBehavior(MySqlSchemaBehavior.Ignore);
                     }));
-                    services.AddHangfire(x => x.UseStorage(new MySqlStorage(rootConnectionString, new MySqlStorageOptions())));
                     break;
+
                 default:
                     throw new Exception($"DB Provider {dbProvider} is not supported.");
             }
 
+            var storageSettings = services.GetOptions<HangFireStorageSettings>("HangFireSettings:Storage");
+
+            if (string.IsNullOrEmpty(storageSettings.StorageProvider)) throw new Exception("Storage HangFire Provider is not configured.");
+            _logger.Information($"HagnFire: Current Storage Provider : {storageSettings.StorageProvider}");
+            _logger.Information("For more HangFire storage, visit https://www.hangfire.io/extensions.html");
+
+            switch (storageSettings.StorageProvider.ToLower())
+            {
+                case "postgresql":
+                    services.AddHangfire(x => x.UsePostgreSqlStorage(storageSettings.ConnectionString, services.GetOptions<PostgreSqlStorageOptions>("HangFireSettings:Storage:Options")));
+                    break;
+
+                case "mssql":
+                    services.AddHangfire(x => x.UseSqlServerStorage(storageSettings.ConnectionString, services.GetOptions<SqlServerStorageOptions>("HangFireSettings:Storage:Options")));
+                    break;
+
+                case "mysql":
+                    services.AddHangfire(x => x.UseStorage(new MySqlStorage(storageSettings.ConnectionString, services.GetOptions<MySqlStorageOptions>("HangFireSettings:Storage:Options"))));
+                    break;
+
+                default:
+                    throw new Exception($"HangFire Storage Provider {storageSettings.StorageProvider} is not supported.");
+            }
+
             services.SetupDatabases<T, TA>(multitenancySettings);
-            _logger.Information($"For documentations and guides, please visit fullstackhero.net");
+            _logger.Information("For documentations and guides, visit https://www.fullstackhero.net");
+            _logger.Information("To Sponsor this project, visit https://opencollective.com/fullstackhero");
             return services;
         }
 
@@ -70,9 +96,11 @@ namespace DN.WebApi.Infrastructure.Persistence.Extensions
                 case "postgresql":
                     services.AddDbContext<TA>(m => m.UseNpgsql(e => e.MigrationsAssembly("Migrators.PostgreSQL")));
                     break;
+
                 case "mssql":
                     services.AddDbContext<TA>(m => m.UseSqlServer(e => e.MigrationsAssembly("Migrators.MSSQL")));
                     break;
+
                 case "mysql":
                     services.AddDbContext<TA>(m => m.UseMySql(options.ConnectionString, ServerVersion.AutoDetect(options.ConnectionString), e =>
                     {
@@ -87,7 +115,7 @@ namespace DN.WebApi.Infrastructure.Persistence.Extensions
                 if (dbContext.Database.GetPendingMigrations().Any())
                 {
                     dbContext.Database.Migrate();
-                    _logger.Information($"Applying Root Migrations.");
+                    _logger.Information("Applying Root Migrations.");
                 }
 
                 if (dbContext.Database.CanConnect())
@@ -113,16 +141,17 @@ namespace DN.WebApi.Infrastructure.Persistence.Extensions
         private static IServiceCollection SetupTenantDatabase<TA>(this IServiceCollection services, MultitenancySettings options, Tenant tenant)
         where TA : ApplicationDbContext
         {
-
             string tenantConnectionString = string.IsNullOrEmpty(tenant.ConnectionString) ? options.ConnectionString : tenant.ConnectionString;
             switch (options.DBProvider.ToLower())
             {
                 case "postgresql":
                     services.AddDbContext<TA>(m => m.UseNpgsql(e => e.MigrationsAssembly("Migrators.PostgreSQL")));
                     break;
+
                 case "mssql":
                     services.AddDbContext<TA>(m => m.UseSqlServer(e => e.MigrationsAssembly("Migrators.MSSQL")));
                     break;
+
                 case "mysql":
                     services.AddDbContext<TA>(m => m.UseMySql(tenantConnectionString, ServerVersion.AutoDetect(tenantConnectionString), e =>
                     {
