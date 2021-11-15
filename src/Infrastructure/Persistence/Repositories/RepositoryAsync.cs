@@ -14,7 +14,6 @@ using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -32,19 +31,18 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
         private readonly IStringLocalizer<RepositoryAsync> _localizer;
         private readonly ICacheService _cache;
         private readonly ApplicationDbContext _dbContext;
-        private readonly ILogger<RepositoryAsync> _logger;
-        private ISerializerService _serializer;
+        private readonly ISerializerService _serializer;
 
-        public RepositoryAsync(ApplicationDbContext dbContext, ISerializerService serializer, ICacheService cache, ILogger<RepositoryAsync> logger, IStringLocalizer<RepositoryAsync> localizer)
+        public RepositoryAsync(ApplicationDbContext dbContext, ISerializerService serializer, ICacheService cache, IStringLocalizer<RepositoryAsync> localizer)
         {
             _dbContext = dbContext;
             _serializer = serializer;
             _cache = cache;
-            _logger = logger;
             _localizer = localizer;
         }
 
-        #region  Entity Framework Core : Get All
+        #region Entity Framework Core : Get All
+
         public async Task<List<T>> GetListAsync<T>(Expression<Func<T, bool>> expression, bool noTracking = false, CancellationToken cancellationToken = default)
         where T : BaseEntity
         {
@@ -53,38 +51,39 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
             if (expression != null) query = query.Where(expression);
             return await query.ToListAsync(cancellationToken);
         }
-        #endregion
+
+        #endregion Entity Framework Core : Get All
+
         public async Task<T> GetByIdAsync<T>(Guid entityId, BaseSpecification<T> specification = null, CancellationToken cancellationToken = default)
         where T : BaseEntity
         {
             IQueryable<T> query = _dbContext.Set<T>();
             if (specification != null)
                 query = query.Specify(specification);
-            return await query.Where(e => e.Id == entityId).FirstOrDefaultAsync();
+            return await query.Where(e => e.Id == entityId).FirstOrDefaultAsync(cancellationToken: cancellationToken);
         }
 
         public async Task<TDto> GetByIdAsync<T, TDto>(Guid entityId, BaseSpecification<T> specification, CancellationToken cancellationToken = default)
         where T : BaseEntity
         where TDto : IDto
         {
-            var cacheKey = CacheKeys.GetCacheKey<T>(entityId);
+            string cacheKey = CacheKeys.GetCacheKey<T>(entityId);
             byte[] cachedData = !string.IsNullOrWhiteSpace(cacheKey) ? await _cache.GetAsync(cacheKey, cancellationToken) : null;
             if (cachedData != null)
             {
-                await _cache.RefreshAsync(cacheKey);
-                var entity = _serializer.Deserialize<TDto>(Encoding.Default.GetString(cachedData));
-                return entity;
+                await _cache.RefreshAsync(cacheKey, cancellationToken);
+                return _serializer.Deserialize<TDto>(Encoding.Default.GetString(cachedData));
             }
             else
             {
                 IQueryable<T> query = _dbContext.Set<T>();
                 if (specification != null)
-                    query = query.Specify(specification).Where(a => a.Id == entityId);
-                var entity = await query.FirstOrDefaultAsync();
+                    query = query.Specify(specification);
+                var entity = await query.Where(a => a.Id == entityId).FirstOrDefaultAsync(cancellationToken: cancellationToken);
                 var dto = entity.Adapt<TDto>();
                 if (dto != null)
                 {
-                    if ((specification != null && specification.Includes?.Count == 0) || specification == null)
+                    if ((specification?.Includes?.Count == 0) || specification == null)
                     {
                         var options = new DistributedCacheEntryOptions();
                         byte[] serializedData = Encoding.Default.GetBytes(_serializer.Serialize(dto));
@@ -104,7 +103,7 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
         {
             IQueryable<T> query = _dbContext.Set<T>();
             if (expression != null) query = query.Where(expression);
-            if (advancedSearch != null && advancedSearch.Fields.Count > 0 && !string.IsNullOrEmpty(advancedSearch.Keyword))
+            if (advancedSearch?.Fields.Count > 0 && !string.IsNullOrEmpty(advancedSearch.Keyword))
                 query = query.AdvancedSearch(advancedSearch);
             else if (!string.IsNullOrEmpty(keyword))
                 query = query.SearchByKeyword(keyword);
@@ -160,6 +159,7 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
         }
 
         #region Dapper
+
         public async Task<IReadOnlyList<T>> QueryAsync<T>(string sql, object param = null, IDbTransaction transaction = null, CancellationToken cancellationToken = default)
         where T : BaseEntity
         {
@@ -206,6 +206,7 @@ namespace DN.WebApi.Infrastructure.Persistence.Repositories
 
             return await query.CountAsync(cancellationToken);
         }
-        #endregion
+
+        #endregion Dapper
     }
 }

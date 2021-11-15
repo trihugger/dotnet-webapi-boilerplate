@@ -39,27 +39,38 @@ namespace DN.WebApi.Infrastructure.Extensions
             services.TryAdd(ServiceDescriptor.Singleton<ICacheService, CacheService>());
             services.AddHealthCheckExtension();
             services.AddLocalization();
-            services.AddServices(config);
+            services.AddServices();
             services.AddSettings(config);
-            services.AddPermissions(config);
+            services.AddPermissions();
             services.AddIdentity(config);
             services.AddMultitenancy<TenantManagementDbContext, ApplicationDbContext>(config);
-            services.AddHangfireServer();
+            services.AddHangfireServer(options =>
+            {
+                var optionsServer = services.GetOptions<BackgroundJobServerOptions>("HangFireSettings:Server");
+                options.HeartbeatInterval = optionsServer.HeartbeatInterval;
+                options.Queues = optionsServer.Queues;
+                options.SchedulePollingInterval = optionsServer.SchedulePollingInterval;
+                options.ServerCheckInterval = optionsServer.ServerCheckInterval;
+                options.ServerName = optionsServer.ServerName;
+                options.ServerTimeout = optionsServer.ServerTimeout;
+                options.ShutdownTimeout = optionsServer.ShutdownTimeout;
+                options.WorkerCount = optionsServer.WorkerCount;
+            });
             services.AddRouting(options => options.LowercaseUrls = true);
-            services.AddMiddlewares(config);
-            services.AddSwaggerDocumentation(config);
+            services.AddMiddlewares();
+            services.AddSwaggerDocumentation();
             services.AddCorsPolicy();
             services.AddApiVersioning(config =>
-           {
-               config.DefaultApiVersion = new ApiVersion(1, 0);
-               config.AssumeDefaultVersionWhenUnspecified = true;
-               config.ReportApiVersions = true;
-           });
+            {
+                config.DefaultApiVersion = new ApiVersion(1, 0);
+                config.AssumeDefaultVersionWhenUnspecified = true;
+                config.ReportApiVersions = true;
+            });
             services.AddSingleton<IStringLocalizerFactory, JsonStringLocalizerFactory>();
             return services;
         }
 
-        public static IServiceCollection AddPermissions(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddPermissions(this IServiceCollection services)
         {
             services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>()
                 .AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();

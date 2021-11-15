@@ -3,13 +3,13 @@ using DN.WebApi.Infrastructure.Auditing.Enums;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DN.WebApi.Infrastructure.Auditing.Models
 {
     public class AuditTrail
     {
         private readonly ISerializerService _serializer;
+
         public AuditTrail(EntityEntry entry, ISerializerService serializer)
         {
             Entry = entry;
@@ -25,7 +25,7 @@ namespace DN.WebApi.Infrastructure.Auditing.Models
         public List<PropertyEntry> TemporaryProperties { get; } = new();
         public TrailType TrailType { get; set; }
         public List<string> ChangedColumns { get; } = new();
-        public bool HasTemporaryProperties => TemporaryProperties.Any();
+        public bool HasTemporaryProperties => TemporaryProperties.Count > 0;
 
         public Trail ToAuditTrail()
         {

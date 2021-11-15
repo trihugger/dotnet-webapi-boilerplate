@@ -16,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 
 namespace DN.WebApi.Infrastructure.Identity.Services
@@ -32,6 +31,8 @@ namespace DN.WebApi.Infrastructure.Identity.Services
         private readonly IStringLocalizer<IdentityService> _localizer;
         private readonly ITenantService _tenantService;
 
+        private readonly IEmailTemplateService _templateService;
+
         public IdentityService(
             UserManager<ApplicationUser> userManager,
             IJobService jobService,
@@ -40,7 +41,8 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             IStringLocalizer<IdentityService> localizer,
             ITenantService tenantService,
             SignInManager<ApplicationUser> signInManager,
-            IFileStorageService fileStorage)
+            IFileStorageService fileStorage,
+            IEmailTemplateService templateService)
         {
             _userManager = userManager;
             _jobService = jobService;
@@ -50,6 +52,7 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             _tenantService = tenantService;
             _signInManager = signInManager;
             _fileStorage = fileStorage;
+            _templateService = templateService;
         }
 
         public IdentityService()
@@ -99,7 +102,7 @@ namespace DN.WebApi.Infrastructure.Identity.Services
                         {
                             From = _mailSettings.From,
                             To = user.Email,
-                            Body = string.Format(_localizer["Please confirm your account by <a href='{0}'>clicking here</a>."], emailVerificationUri),
+                            Body = _templateService.GenerateEmailConfirmationMail(user.UserName, user.Email, emailVerificationUri),
                             Subject = _localizer["Confirm Registration"]
                         };
                         _jobService.Enqueue(() => _mailService.SendAsync(mailRequest));
@@ -119,26 +122,9 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             }
         }
 
-        private async Task<string> GetEmailVerificationUriAsync(ApplicationUser user, string origin)
-        {
-            string code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            string route = "api/identity/confirm-email/";
-            var endpointUri = new Uri(string.Concat($"{origin}/", route));
-            string verificationUri = QueryHelpers.AddQueryString(endpointUri.ToString(), "userId", user.Id);
-            verificationUri = QueryHelpers.AddQueryString(verificationUri, "code", code);
-            verificationUri = QueryHelpers.AddQueryString(verificationUri, "tenantKey", _tenantService.GetCurrentTenant()?.Key);
-            return verificationUri;
-        }
-
-        private async Task<string> GetMobilePhoneVerificationCodeAsync(ApplicationUser user)
-        {
-            return await _userManager.GenerateChangePhoneNumberTokenAsync(user, user.PhoneNumber);
-        }
-
         public async Task<IResult<string>> ConfirmEmailAsync(string userId, string code, string tenantKey)
         {
-            var user = await _userManager.Users.IgnoreQueryFilters().Where(a => a.Id == userId && a.EmailConfirmed == false && a.TenantKey == tenantKey).FirstOrDefaultAsync();
+            var user = await _userManager.Users.IgnoreQueryFilters().Where(a => a.Id == userId && !a.EmailConfirmed && a.TenantKey == tenantKey).FirstOrDefaultAsync();
             if (user == null)
             {
                 throw new IdentityException(_localizer["An error occurred while confirming E-Mail."]);
@@ -194,13 +180,12 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             // For more information on how to enable account confirmation and password reset please
             // visit https://go.microsoft.com/fwlink/?LinkID=532713
             string code = await _userManager.GeneratePasswordResetTokenAsync(user);
-            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            string route = "account/reset-password";
+            const string route = "account/reset-password";
             var endpointUri = new Uri(string.Concat($"{origin}/", route));
             string passwordResetUrl = QueryHelpers.AddQueryString(endpointUri.ToString(), "Token", code);
             var mailRequest = new MailRequest
             {
-                Body = string.Format(_localizer["Please reset your password by <a href='{0}>clicking here</a>."], HtmlEncoder.Default.Encode(passwordResetUrl)),
+                Body = _localizer[$"Your Password Reset Token is '{code}'. You can reset your password using the {endpointUri} Endpoint."],
                 Subject = _localizer["Reset Password"],
                 To = request.Email
             };
@@ -250,14 +235,13 @@ namespace DN.WebApi.Infrastructure.Identity.Services
 
                 if (request.Image != null)
                 {
-                    var imagePath = await _fileStorage.UploadAsync<ApplicationUser>(request.Image, FileType.Image);
-                    user.ImageUrl = imagePath;
+                    user.ImageUrl = await _fileStorage.UploadAsync<ApplicationUser>(request.Image, FileType.Image);
                 }
 
                 user.FirstName = request.FirstName;
                 user.LastName = request.LastName;
                 user.PhoneNumber = request.PhoneNumber;
-                var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
+                string phoneNumber = await _userManager.GetPhoneNumberAsync(user);
                 if (request.PhoneNumber != phoneNumber)
                 {
                     var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, request.PhoneNumber);
@@ -272,6 +256,23 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             {
                 return await Result.FailAsync(string.Format(_localizer["Email {0} is already used."], request.Email));
             }
+        }
+
+        private async Task<string> GetMobilePhoneVerificationCodeAsync(ApplicationUser user)
+        {
+            return await _userManager.GenerateChangePhoneNumberTokenAsync(user, user.PhoneNumber);
+        }
+
+        private async Task<string> GetEmailVerificationUriAsync(ApplicationUser user, string origin)
+        {
+            string code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            const string route = "api/identity/confirm-email/";
+            var endpointUri = new Uri(string.Concat($"{origin}/", route));
+            string verificationUri = QueryHelpers.AddQueryString(endpointUri.ToString(), "userId", user.Id);
+            verificationUri = QueryHelpers.AddQueryString(verificationUri, "code", code);
+            verificationUri = QueryHelpers.AddQueryString(verificationUri, "tenantKey", _tenantService.GetCurrentTenant()?.Key);
+            return verificationUri;
         }
     }
 }

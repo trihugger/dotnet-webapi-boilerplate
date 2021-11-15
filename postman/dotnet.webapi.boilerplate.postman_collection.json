@@ -204,6 +204,101 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "get-current-user-audit-logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/audit-logs",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"audit-logs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "forgot-password",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "tenantKey",
+								"value": "root",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\":\"admin@root.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/identity/forgot-password/",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"identity",
+								"forgot-password",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "reset-password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "tenantKey",
+								"value": "root",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\":\"admin@root.com\",\r\n    \"password\":\"someNewPasswordHere\",\r\n    \"token\": \"CfDJ8PIF9j3oEv9OhQoxaFuWSdrXdo285moY/7tDJk0Kf03ghZ/tjf7/LZVR4tN8mHnr4Ot+TdZaxOTxAYm7j2yY38I/ZJmle6RtrDAVrDUXJ+jqk+pqN7W9MpCigtt7n4wjTeOIzgSWzHUAAXWeUA1pDM2DWHGYMGF2BcRrdfwCWQ2UyQn13newFVAi8DwRwziAMCLvpS6Kynm1m/TzKaBZMft3uISeRc2hG1yFW45dRHxAlqurYRqzaKPZRSTJsTkQag==\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/identity/reset-password/",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"identity",
+								"reset-password",
+								""
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},

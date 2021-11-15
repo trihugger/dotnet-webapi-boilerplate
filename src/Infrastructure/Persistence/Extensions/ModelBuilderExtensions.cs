@@ -11,10 +11,9 @@ namespace DN.WebApi.Infrastructure.Persistence.Extensions
 {
     public static class ModelBuilderExtensions
     {
-
         public static void ApplyIdentityConfiguration(this ModelBuilder builder, ITenantService tenantService)
         {
-            var dbProvider = tenantService.GetDatabaseProvider();
+            string dbProvider = tenantService.GetDatabaseProvider();
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.ToTable("Users", "Identity");
