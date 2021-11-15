@@ -144,9 +144,19 @@ namespace DN.WebApi.Infrastructure.Services.General
             return _options.UseAD;
         }
 
-        public string GetAdDomain()
+        public bool RolesFromDepartment()
         {
-            return _options.AdDomain;
+            return _options.RoleFromDepartment;
+        }
+
+        public bool RolesFromGroups()
+        {
+            return _options.RoleFromGroup;
+        }
+
+        public bool AuthorizeOffline()
+        {
+            return _options.AuthorizeOffline;
         }
     }
 }

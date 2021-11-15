@@ -58,7 +58,19 @@ namespace DN.WebApi.Infrastructure.Identity.Services
 
         public async Task<IResult<TokenResponse>> GetTokenAsync(TokenRequest request, string ipAddress)
         {
-            var user = await _userManager.FindByEmailAsync(request.Email.Trim());
+            ApplicationUser user = null;
+            if (_tenantService.UseAD())
+            {
+                bool authenticated = await _activeDirectoryService.AuthenticateAsync(request.Email, request.Password);
+                if(authenticated) user = await _userManager.FindByNameAsync(request.Email);
+                else if(!authenticated && !_tenantService.AuthorizeOffline()) throw new IdentityException(_localizer["identity.invalidcredentials"], statusCode: HttpStatusCode.Unauthorized);
+                else user = await _userManager.FindByNameAsync(request.Email.Trim());
+            }
+            else
+            {
+                user = await _userManager.FindByEmailAsync(request.Email.Trim());
+            }
+
             if (user == null)
             {
                 throw new IdentityException(_localizer["identity.usernotfound"], statusCode: HttpStatusCode.Unauthorized);
@@ -87,12 +99,6 @@ namespace DN.WebApi.Infrastructure.Identity.Services
             if (_mailSettings.EnableVerification && !user.EmailConfirmed)
             {
                 throw new IdentityException(_localizer["identity.emailnotconfirmed"], statusCode: HttpStatusCode.Unauthorized);
-            }
-
-            if (_tenantService.UseAD())
-            {
-                bool adUserValid = _activeDirectoryService.AuthenticateAsync(_tenantService.GetAdDomain(), user.UserName, request.Password);
-                if (adUserValid) await _activeDirectoryService.UpdateUserAsync(user.UserName, request.Password);
             }
 
             bool passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);

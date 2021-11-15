@@ -8,6 +8,8 @@ namespace DN.WebApi.Application.Abstractions.Services.General
         public string GetConnectionString();
         public TenantDto GetCurrentTenant();
         public bool UseAD();
-        public string GetAdDomain();
+        public bool RolesFromDepartment();
+        public bool RolesFromGroups();
+        public bool AuthorizeOffline();
     }
 }
