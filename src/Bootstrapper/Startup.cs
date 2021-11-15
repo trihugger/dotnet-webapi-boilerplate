@@ -26,6 +26,9 @@ namespace DN.WebApi.Bootstrapper
             services
                 .AddApplication()
                 .AddInfrastructure(_config);
+            services.AddAntiforgery();  // see more on http://docs.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore.6.0
+
+                                        // add [AutoValidateAntiForgeryToken] tag to the controller and can be disabled with [IgnoreAntiforgeryToken] tag as needed
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -37,6 +40,7 @@ namespace DN.WebApi.Bootstrapper
             else
             {
                 app.UseExceptionHandler("/Error");
+                app.UseHttpsRedirection(); // Add to automatically redirect to https. Note: this can also be done in the IIS config as well.
             }
 
             app.UseInfrastructure(_config);
